@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17251f">
+<title>Sherco Enduro Logbook</title>
+<style>
+:root{--bg:#f4f6f3;--card:#fff;--ink:#17251f;--muted:#66736b;--line:#dce3dd;--accent:#245b43;--warn:#8b4b12}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#17251f;color:white;padding:calc(18px + env(safe-area-inset-top)) 18px 18px;position:sticky;top:0;z-index:2}
+header small{opacity:.75}header h1{font-size:22px;margin:5px 0}
+main{max-width:760px;margin:auto;padding:16px 14px 90px}
+.tabs{display:flex;gap:8px;overflow:auto;margin:0 0 14px}
+.tab{border:1px solid var(--line);border-radius:999px;background:white;padding:10px 14px;white-space:nowrap;color:var(--ink)}
+.tab.active{background:var(--accent);color:white;border-color:var(--accent)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+h2{font-size:18px;margin:0 0 12px}h3{font-size:15px;margin:16px 0 8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:#edf3ee;border-radius:12px;padding:12px}.metric strong{display:block;font-size:25px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+input,textarea,select{width:100%;font:inherit;padding:12px;border:1px solid #cbd5cd;border-radius:10px;background:white;color:var(--ink)}
+textarea{min-height:80px;resize:vertical}
+button{font:inherit;border:0;border-radius:11px;padding:12px 14px;background:var(--accent);color:white;font-weight:600}
+button.secondary{background:#e8eee9;color:var(--ink);border:1px solid var(--line)}
+button.danger{background:#8c3029}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #edf0ed}
+.check input{width:20px;height:20px;flex:0 0 20px;margin:1px 0}
+.check span{line-height:1.35}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0}
+.item strong{display:block}.muted{color:var(--muted);font-size:13px}.pill{display:inline-block;background:#edf3ee;border-radius:999px;padding:4px 8px;font-size:12px}
+.notice{background:#fff4e5;border:1px solid #f0d7b4;border-radius:12px;padding:12px;color:#75420d;font-size:14px}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:12px}
+@media(min-width:650px){main{padding-top:22px}.grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<header><small>CARNET D'ENTRETIEN · ENDURO</small><h1>Sherco Enduro Logbook</h1><small>300 SE Factory · 2025 · 2 temps</small></header>
+<main>
+<nav class="tabs" aria-label="Sections">
+<button class="tab active" data-tab="home">Accueil</button>
+<button class="tab" data-tab="checks">Protocoles</button>
+<button class="tab" data-tab="log">Carnet</button>
+<button class="tab" data-tab="settings">Réglages</button>
+</nav>
+<section id="home" class="panel active">
+<div class="card">
+<div class="grid">
+<div class="metric"><span class="muted">Heures moteur</span><strong id="dashHours">60 h</strong></div>
+<div class="metric"><span class="muted">Interventions notées</span><strong id="dashCount">0</strong></div>
+<div class="metric"><span class="muted">Prochaine vidange*</span><strong id="nextOil">80 h</strong></div>
+</div>
+<p class="muted">*Échéance indicative modifiable dans Réglages. Vérifie les intervalles exacts dans le manuel correspondant à ton numéro de série.</p>
+</div>
+<div class="notice"><strong>À vérifier en priorité :</strong> historique du piston, de la bougie et des entretiens périodiques. À 60 h, ne considère pas une opération comme faite sans trace fiable.</div>
+<div class="card"><h2>Accès rapide</h2><div class="actions">
+<button onclick="showTab('checks')">Ouvrir les protocoles</button>
+<button class="secondary" onclick="showTab('log')">Ajouter une intervention</button>
+</div></div>
+<div class="card"><h2>Échéances de suivi</h2><div id="dueList"></div></div>
+</section>
+<section id="checks" class="panel">
+<div class="card"><h2>Protocoles de contrôle</h2><p class="muted">Coche les points réalisés. Les cases se réinitialisent quand tu recharges la page; note les anomalies dans le carnet.</p>
+<label for="protocolSelect">Choisir un protocole</label>
+<select id="protocolSelect">
+<option value="before">Avant chaque sortie</option>
+<option value="after">Après chaque sortie</option>
+<option value="deep">Contrôle périodique / révision</option>
+</select>
+<div id="checklist"></div>
+<div class="actions"><button class="secondary" id="resetChecks">Réinitialiser les cases</button><button onclick="addChecklistNote()">Noter un contrôle</button></div>
+</div>
+</section>
+<section id="log" class="panel">
+<div class="card"><h2>Ajouter au carnet d'entretien</h2>
+<form id="logForm">
+<label for="entryDate">Date</label><input id="entryDate" type="date" required>
+<label for="entryHours">Heures moteur au moment de l'intervention</label><input id="entryHours" type="number" min="0" step="0.1" value="60" required>
+<label for="entryType">Type</label><select id="entryType"><option>Entretien</option><option>Contrôle</option><option>Réparation</option><option>Sortie</option></select>
+<label for="entryTitle">Opération / contrôle</label><input id="entryTitle" placeholder="Ex. Vidange huile de boîte" required>
+<label for="entryParts">Pièces et consommables</label><input id="entryParts" placeholder="Référence, quantité, marque…">
+<label for="entryNotes">Observations / prochaine échéance</label><textarea id="entryNotes" placeholder="État, mesure, anomalie, suite à prévoir…"></textarea>
+<div class="actions"><button type="submit">Enregistrer</button></div>
+</form></div>
+<div class="card"><h2>Historique</h2><div id="history"></div><div class="actions"><button class="secondary" onclick="exportJSON()">Exporter une sauvegarde JSON</button><button class="secondary" onclick="exportCSV()">Exporter en CSV</button></div></div>
+</section>
+<section id="settings" class="panel">
+<div class="card"><h2>Réglages de la moto</h2>
+<label for="currentHours">Heures moteur actuelles</label><input id="currentHours" type="number" min="0" step="0.1" value="60">
+<label for="oilInterval">Intervalle de rappel huile de boîte (heures)</label><input id="oilInterval" type="number" min="1" value="20">
+<label for="lastOil">Dernière vidange connue (heures moteur)</label><input id="lastOil" type="number" min="0" step="0.1" placeholder="À renseigner">
+<label for="sparkInterval">Intervalle de rappel bougie (heures)</label><input id="sparkInterval" type="number" min="1" value="50">
+<label for="lastSpark">Dernier remplacement bougie (heures moteur)</label><input id="lastSpark" type="number" min="0" step="0.1" placeholder="À renseigner">
+<div class="actions"><button onclick="saveSettings()">Enregistrer les réglages</button></div>
+</div>
+<div class="card"><h2>Sauvegarde et données</h2><p class="muted">Les données sont conservées dans le stockage local de ce navigateur sur cet appareil. Elles ne sont pas automatiquement synchronisées avec iCloud. Exporte régulièrement une sauvegarde.</p>
+<label for="importFile">Importer une sauvegarde JSON</label><input id="importFile" type="file" accept=".json,application/json">
+<div class="actions"><button class="danger" onclick="clearData()">Effacer toutes les données</button></div>
+</div>
+<div class="notice">Les intervalles affichés sont des repères de départ, pas une validation officielle Sherco. Confirme les échéances et les procédures dans le manuel 2025 exact de ta moto ou auprès d'un atelier Sherco.</div>
+</section>
+<footer>Prototype local · À utiliser comme aide-mémoire, pas comme remplacement du manuel constructeur.</footer>
+</main>
+<script>
+const defaults={
+hours:60,oilInterval:20,lastOil:null,sparkInterval:50,lastSpark:null,
+logs:[],
+protocols:{
+before:["Pneus : pression, coupures et corps étrangers","Roues : jeu, rayons, axes et fixations","Freins : fonctionnement, plaquettes, disques et fuites","Direction : jeu anormal et rotation libre","Suspensions : fuites et dommages visibles","Guidon, leviers, poignées et protège-mains","Accélérateur : retour libre et rapide","Chaîne : tension, lubrification et état","Niveau de refroidissement à froid et fuites","Niveau d'huile de boîte selon la procédure du manuel","Durites, radiateurs et protections","Coupe-circuit et commandes"],
+after:["Nettoyer la moto sans jet direct sur roulements/joints","Contrôler le filtre à air; nettoyer/huiler si nécessaire","Nettoyer et lubrifier la chaîne","Rechercher fuites, fissures et pièces desserrées","Inspecter pneus, roues, rayons et protections","Nettoyer les joints racleurs de fourche","Noter les heures moteur et anomalies"],
+deep:["Consulter les échéances du manuel et l'historique","Contrôler filtre à air et boîte à air","Contrôler huile de boîte et rechercher particules anormales","Contrôler bougie selon l'échéance constructeur","Inspecter valves d'échappement selon procédure prévue","Contrôler embrayage : fonctionnement et signes d'usure","Contrôler jeu de direction, roues et biellettes","Contrôler circuit de refroidissement et radiateurs","Contrôler freins, chaîne, guide-chaîne et fixations","Faire vérifier piston/cylindre et bas moteur selon échéance et historique"]
+}};
+let state=load();
+function load(){try{return {...defaults,...JSON.parse(localStorage.getItem('shercoLogbook')||'{}')}}catch(e){return {...defaults}}}
+function save(){localStorage.setItem('shercoLogbook',JSON.stringify(state));render()}
+function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));window.scrollTo(0,0)}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+function render(){
+document.getElementById('dashHours').textContent=state.hours+' h';
+document.getElementById('dashCount').textContent=state.logs.length;
+const oilDue=state.lastOil==null?null:Number(state.lastOil)+Number(state.oilInterval);
+document.getElementById('nextOil').textContent=oilDue==null?'À renseigner':oilDue+' h';
+document.getElementById('currentHours').value=state.hours;
+document.getElementById('oilInterval').value=state.oilInterval;
+document.getElementById('lastOil').value=state.lastOil??'';
+document.getElementById('sparkInterval').value=state.sparkInterval;
+document.getElementById('lastSpark').value=state.lastSpark??'';
+let dues=[];
+if(state.lastOil==null) dues.push('Renseigne la dernière vidange connue pour calculer la prochaine échéance.');
+else dues.push(`Huile de boîte : ${oilDue} h — ${state.hours>=oilDue?'échéance atteinte ou dépassée':(oilDue-state.hours).toFixed(1)+' h restantes'}.`);
+if(state.lastSpark==null) dues.push('Bougie : renseigne la dernière heure de remplacement pour calculer le rappel.');
+else {let d=Number(state.lastSpark)+Number(state.sparkInterval);dues.push(`Bougie : rappel à ${d} h — ${state.hours>=d?'échéance atteinte ou dépassée':(d-state.hours).toFixed(1)+' h restantes'}.`)}
+document.getElementById('dueList').innerHTML=dues.map(x=>`<div class="item">${esc(x)}</div>`).join('');
+document.getElementById('history').innerHTML=state.logs.length?state.logs.slice().reverse().map((l,i)=>`<div class="item"><strong>${esc(l.title)} <span class="pill">${esc(l.hours)} h</span></strong><div class="muted">${esc(l.date)} · ${esc(l.type)}</div>${l.parts?'<p>'+esc(l.parts)+'</p>':''}${l.notes?'<p>'+esc(l.notes)+'</p>':''}<button class="secondary" onclick="deleteLog(${state.logs.length-1-i})">Supprimer</button></div>`).join(''):'<p class="muted">Aucune intervention enregistrée pour le moment.</p>';
+renderChecklist();
+}
+function renderChecklist(){let key=document.getElementById('protocolSelect').value;document.getElementById('checklist').innerHTML=state.protocols[key].map((t,i)=>`<label class="check"><input type="checkbox"><span>${esc(t)}</span></label>`).join('')}
+document.getElementById('protocolSelect').addEventListener('change',renderChecklist);
+document.getElementById('resetChecks').addEventListener('click',renderChecklist);
+function addChecklistNote(){document.getElementById('entryType').value='Contrôle';document.getElementById('entryTitle').value='Contrôle protocole : '+document.getElementById('protocolSelect').selectedOptions[0].text;document.getElementById('entryHours').value=state.hours;showTab('log');document.getElementById('entryNotes').focus()}
+document.getElementById('logForm').addEventListener('submit',e=>{e.preventDefault();let l={date:val('entryDate'),hours:Number(val('entryHours')),type:val('entryType'),title:val('entryTitle'),parts:val('entryParts'),notes:val('entryNotes')};state.logs.push(l);state.hours=Math.max(state.hours,l.hours);if(/vidange|huile de boîte/i.test(l.title))state.lastOil=l.hours;if(/bougie/i.test(l.title))state.lastSpark=l.hours;document.getElementById('logForm').reset();document.getElementById('entryHours').value=state.hours;save()});
+function saveSettings(){state.hours=Number(val('currentHours'))||0;state.oilInterval=Number(val('oilInterval'))||20;state.lastOil=val('lastOil')===''?null:Number(val('lastOil'));state.sparkInterval=Number(val('sparkInterval'))||50;state.lastSpark=val('lastSpark')===''?null:Number(val('lastSpark'));save();alert('Réglages enregistrés.')}
+function deleteLog(i){if(confirm('Supprimer cette entrée ?')){state.logs.splice(i,1);save()}}
+function exportJSON(){download('sherco-carnet.json',JSON.stringify(state,null,2),'application/json')}
+function exportCSV(){let rows=[['Date','Heures','Type','Opération','Pièces','Observations'],...state.logs.map(l=>[l.date,l.hours,l.type,l.title,l.parts,l.notes])];download('sherco-carnet.csv',rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(';')).join('\n'),'text/csv;charset=utf-8')}
+function download(name,data,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+document.getElementById('importFile').addEventListener('change',async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!x.logs||!x.protocols)throw 0;if(confirm('Remplacer les données actuelles par cette sauvegarde ?')){state={...defaults,...x};save();alert('Sauvegarde importée.')}}catch(err){alert('Fichier de sauvegarde invalide.')}e.target.value=''});
+function clearData(){if(confirm('Effacer définitivement les données locales de cette application ?')){localStorage.removeItem('shercoLogbook');state={...defaults,logs:[]};save()}}
+function val(id){return document.getElementById(id).value}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+document.getElementById('entryDate').value=new Date().toISOString().slice(0,10);
+render();
+</script>
+</body></html>
