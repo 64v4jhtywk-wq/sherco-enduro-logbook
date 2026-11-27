@@ -1,0 +1,1 @@
+# sherco-enduro-logbook
